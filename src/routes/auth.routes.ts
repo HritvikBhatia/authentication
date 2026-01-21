@@ -56,6 +56,7 @@ authRouter.post("/signup", async (req: Request, res: Response) => {
     await prisma.token.create({
       data: {
         tokenHash,
+        type: "EMAIL_VERIFY",
         expiresAt,
         userId: user.id,
       },
@@ -86,3 +87,49 @@ authRouter.post("/signup", async (req: Request, res: Response) => {
   }
 });
 
+
+authRouter.get("/verify-email/:token", async (req: Request, res: Response) => {
+  try {
+    const rawToken = req.params.token;
+
+    if (Array.isArray(rawToken)) {
+      return res.status(400).json({ message: "Invalid token" });
+    }
+
+
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
+
+    const token = await prisma.token.findFirst({
+      where: {
+        tokenHash,
+        type: "EMAIL_VERIFY",
+        used: false,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!token) {
+      return res.status(400).json({
+        message: "Invalid or expired verification link",
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: token.userId },
+      data: { verify: true },
+    });
+
+    await prisma.token.update({
+      where: { id: token.id },
+      data: { used: true },
+    });
+
+    res.json({ message: "Email verified successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Verification failed" });
+  }
+});

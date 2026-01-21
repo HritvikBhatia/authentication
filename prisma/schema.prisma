@@ -19,12 +19,21 @@ model User {
 }
 
 model Token {
-  id Int @id @default(autoincrement())
-  
-  tokenHash String
-  expiresAt DateTime 
+  id        Int      @id @default(autoincrement())
+
+  tokenHash String   @unique
+  type      TokenType
+  expiresAt DateTime
+  used      Boolean  @default(false)
 
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  createdAt DateTime @default(now())
+}
+
+enum TokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+  MAGIC_LOGIN
 }
