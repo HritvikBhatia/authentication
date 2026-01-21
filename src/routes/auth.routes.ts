@@ -62,7 +62,7 @@ authRouter.post("/signup", async (req: Request, res: Response) => {
       },
     });
 
-    const verifyUrl = `http://localhost:3000/verify-email?token=${emailToken}`;
+    const verifyUrl = `http://localhost:3000/api/v1/auth/verify-email?token=${emailToken}`;
 
     const info = await transporter.sendMail({
       from: `"vik authentication" ${process.env.SENDER_EMAIL}`,
