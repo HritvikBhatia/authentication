@@ -1,11 +1,13 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { Request, Response } from "express";
+import jwt from "jsonwebtoken";
 import { Router } from "express";
+import { Request, Response } from "express";
 
 import { signupSchema } from "../schemas/user.schemas";
 import { prisma } from "../lib/prisma";
 import { transporter } from "../lib/mail";
+import { email } from "zod";
 
 export const authRouter = Router();
 
@@ -62,7 +64,7 @@ authRouter.post("/signup", async (req: Request, res: Response) => {
       },
     });
 
-    const verifyUrl = `http://localhost:3000/api/v1/auth/verify-email?token=${emailToken}`;
+    const verifyUrl = `http://localhost:3000/api/v1/auth/verify-email/${emailToken}`;
 
     const info = await transporter.sendMail({
       from: `"vik authentication" ${process.env.SENDER_EMAIL}`,
@@ -117,7 +119,7 @@ authRouter.get("/verify-email/:token", async (req: Request, res: Response) => {
       });
     }
 
-    await prisma.user.update({
+    const user = await prisma.user.update({
       where: { id: token.userId },
       data: { verify: true },
     });
@@ -127,7 +129,15 @@ authRouter.get("/verify-email/:token", async (req: Request, res: Response) => {
       data: { used: true },
     });
 
-    res.json({ message: "Email verified successfully" });
+    const jwtToken = jwt.sign({
+      userId: user.id,
+      userEmail: user.email
+    },process.env.JWT_SECRET!)
+
+    res.json({ 
+      token: jwtToken,
+      message: "Email verified successfully" 
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Verification failed" });
