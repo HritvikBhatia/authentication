@@ -7,3 +7,10 @@ export const signupSchema = z.object({
 })
 
 export type SignupSchema = z.infer<typeof signupSchema>;
+
+
+export const forgotPasswordSchema = z.object({
+    email: z.email()
+})
+
+export type ForgotPasswordSchema = z.infer<typeof forgotPasswordSchema >
